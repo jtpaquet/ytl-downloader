@@ -1,0 +1,12 @@
+altgraph==0.17
+fbs==0.8.6
+future==0.18.2
+macholib==1.14
+pefile==2019.4.18
+PyInstaller==3.4
+PyQt5==5.15.0
+PyQt5-sip==12.8.0
+pytube3==9.6.4
+pyusb==1.0.2
+pywin32-ctypes==0.2.0
+typing-extensions==3.7.4.2

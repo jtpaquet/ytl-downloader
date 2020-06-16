@@ -1,0 +1,8 @@
+Command to turn .ui to .py
+pyuic5 –x "jigui".ui –o "jigui".py
+
+venv\Scripts\activate.bat
+
+pyuic5 –x app.ui –o app.py
+
+py main.py
