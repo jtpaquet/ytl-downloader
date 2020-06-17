@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from pytube import YouTube
+from pytube import YouTube,Playlist
 import datetime
 import os
 import urllib.request
@@ -15,70 +15,107 @@ class ytdl_ui(qmain_window, ui_MainWindow):
         super(ytdl_ui, self).__init__(parent)
         self.setupUi(self)
         
+        self.notfoundLabel.hide()
         self.infoVideoWidget.hide()
         self.infoPlaylistWidget.hide()
         self.downloadWidget.hide()
+        self.loadingLabel.hide()
+        self.downloadallWidget.hide()
         
         self.searchButton.clicked.connect(self.search)
         self.linkLineEdit.textChanged.connect(self.editLink)
         self.typeCombo.currentIndexChanged.connect(self.addFormat)
         self.downloadButton.clicked.connect(self.download)
+        self.downloadallButton.clicked.connect(self.downloadall)
         self.quickdownloadButton.clicked.connect(self.downloadHighest)
         self.audioButton.clicked.connect(lambda:self.btnstate("audio"))
         self.videoButton.clicked.connect(lambda:self.btnstate("video"))
         
     def update_infos(self):
-        # Get link
-        link = self.linkLineEdit.text()
-        self.yt = YouTube(link)
-        # Set title text
-        self.videotitleLabel.setText(self.yt.title)
-        self.videotitleLabel.adjustSize()
-        # Set author text
-        self.videoauthorLabel.setText(self.yt.author)
-        self.videoauthorLabel.adjustSize()
-        # Set length text
-        self.videolengthLabel.setText(str(datetime.timedelta(seconds=self.yt.length)))
-        self.videolengthLabel.adjustSize()
-        # Set views text
-        self.videoviewsLabel.setText(str(self.yt.views))
-        self.videoviewsLabel.adjustSize()
-        # Set ratings text
-        self.videoratingsLabel.setText("{:.2f}/5.00".format(self.yt.rating))
-        # Set description text
-        self.videodescriptionLabel.setText(str(self.yt.description))
-        self.videodescriptionLabel.adjustSize()
-        # Set thumbnail
-        data = urllib.request.urlopen(self.yt.thumbnail_url).read()
-        self.thumbnail = QtGui.QImage()
-        self.thumbnail.loadFromData(data)
-        pixmap = QtGui.QPixmap(self.thumbnail).scaled(self.thumbnailLabel.width(), self.thumbnailLabel.height(), QtCore.Qt.KeepAspectRatio)
-        self.thumbnailLabel.setPixmap(pixmap)
+        self.url = self.linkLineEdit.text()
+        if self.link_type == "video":
+            self.yt = YouTube(self.url)
+            # Set title text
+            self.videotitleLabel.setText(self.yt.title)
+            self.videotitleLabel.adjustSize()
+            # Set author text
+            self.videoauthorLabel.setText(self.yt.author)
+            self.videoauthorLabel.adjustSize()
+            # Set length text
+            self.videolengthLabel.setText(str(datetime.timedelta(seconds=self.yt.length)))
+            self.videolengthLabel.adjustSize()
+            # Set views text
+            self.videoviewsLabel.setText(self.sizeFormat(self.yt.views))
+            self.videoviewsLabel.adjustSize()
+            # Set ratings text
+            self.videoratingsLabel.setText("{:.2f}/5.00".format(self.yt.rating))
+            # Set description text
+            self.videodescriptionLabel.setText(str(self.yt.description))
+            self.videodescriptionLabel.adjustSize()
+            # Set thumbnail
+            data = urllib.request.urlopen(self.yt.thumbnail_url).read()
+            self.thumbnail = QtGui.QImage()
+            self.thumbnail.loadFromData(data)
+            pixmap = QtGui.QPixmap(self.thumbnail).scaled(self.thumbnailLabel.width(), self.thumbnailLabel.height(), QtCore.Qt.KeepAspectRatio)
+            self.thumbnailLabel.setPixmap(pixmap)
+            
+        elif self.link_type == "playlist":
+            self.playlist = Playlist(self.url)
+            self.videos = []
+            self.loadingLabel.show()
+            for link in self.playlist:
+                self.loadingLabel.setText("Loading...\n{}/{}".format(len(self.videos), len(self.playlist)))
+                QtWidgets.QApplication.processEvents()
+                self.videos.append(YouTube(link))
+            # Set length text
+            self.playlistlengthLabel.setText(str(len(self.videos)))
+            self.playlistlengthLabel.adjustSize()
+            # Set videos text
+            titles = [vid.title for vid in self.videos]
+            print(titles)
+            print("\n".join(titles))
+            self.videosLabel.setText("\n".join(titles))
+            self.videosLabel.adjustSize()
+            # Thumbnail
+            data = urllib.request.urlopen(self.videos[0].thumbnail_url).read()
+            self.thumbnail = QtGui.QImage()
+            self.thumbnail.loadFromData(data)
+            pixmap = QtGui.QPixmap(self.thumbnail).scaled(self.playlistthumbnailLabel.width(), self.playlistthumbnailLabel.height(), QtCore.Qt.KeepAspectRatio)
+            self.playlistthumbnailLabel.setPixmap(pixmap)
+            self.loadingLabel.hide()
+
         
     def search(self):
-        movie = QtGui.QMovie("loader.gif")
-        self.statusLabel.setMovie(movie)
-        movie.start()
+        # movie = QtGui.QMovie("loader.mp4")
+        # movie.setScaledSize(QtCore.QSize(self.statusLabel.width(), self.statusLabel.height()))
+        # self.statusLabel.setMovie(movie)
+        # movie.start()
+        self.statusLabel.setText("Loading...")
+        QtWidgets.QApplication.processEvents()
+        # Check link_type
+        self.url = self.linkLineEdit.text()
+        self.link_type = self.checkLink()
+        # Update layout according to link type
         self.update_infos()
-        # Check link_type TODO
-        link_type = "video"
-        if link_type == "video":
+        if self.link_type == "video":
             self.infoVideoWidget.show()
-        self.downloadWidget.show()
+            # Set possibilities
+            types = []
+            self.typeCombo.clear()
+            
+            for s in self.yt.streams:
+                if s.type not in types:
+                    types.append(s.type)
+            
+            self.typeCombo.addItems([t.capitalize() for t in sorted(types)])
+            
+            self.addFormat()
+            self.downloadWidget.show()
 
-        # Set possibilities
-        types = []
-        self.typeCombo.clear()
-        
-        for s in self.yt.streams:
-            if s.type not in types:
-                types.append(s.type)
-        
-        self.typeCombo.addItems([t.capitalize() for t in sorted(types)])
-        
-        self.addFormat()
-        
-        movie.stop()
+        elif self.link_type == "playlist":
+            self.infoPlaylistWidget.show()
+            self.downloadallWidget.show()
+        # movie.stop()
         self.statusLabel.setText("Done!")
         self.statusLabel.adjustSize()
         
@@ -98,14 +135,35 @@ class ytdl_ui(qmain_window, ui_MainWindow):
     def download(self):
         self.statusLabel.setText("Downloading...")
         self.selectStream()
-        print(self.stream)
         self.sizeLabel.setText(self.sizeFormat(self.stream.filesize_approx))
         path = os.getcwd()
         fname = "{} - {}".format(self.videoauthorLabel.text(), self.videotitleLabel.text())
         self.stream.download(output_path=os.path.join(path, "Downloads"), filename=fname)
         self.statusLabel.setText("Done!")
-        
-        
+
+    def downloadall(self):
+        totalsize = 0
+        path = os.getcwd()
+        for vid in self.videos:
+            self.stream = vid.streams.get_highest_resolution()
+            totalsize += self.stream.filesize_approx
+
+        self.sizeLabel.setText(self.sizeFormat(totalsize))
+        self.loadingLabel.show()
+        count = 0
+        for vid in self.videos:
+            self.loadingLabel.setText("Loading...\n{}/{}".format(count, len(self.videos)))
+            QtWidgets.QApplication.processEvents()
+            fname = "{} - {}".format(vid.author, vid.title)
+            if self.audioButton.isChecked():
+                vid.streams.get_audio_only().download(output_path=os.path.join(path, "Downloads"), filename=fname)
+            elif self.videoButton.isChecked():
+                vid.streams.get_highest_resolution().download(output_path=os.path.join(path, "Downloads"), filename=fname)
+            count += 1
+
+        self.loadingLabel.hide()
+        self.statusLabel.setText("Done!")
+
     def downloadHighest(self):
         self.statusLabel.setText("Downloading...")
         self.update_infos()
@@ -156,6 +214,15 @@ class ytdl_ui(qmain_window, ui_MainWindow):
             magnitude += 1
             num /= 1000.0
         return "Approx. {0:.2f}{1}b".format(num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
+		
+    def checkLink(self):
+        if "/playlist?list=" in self.url:
+            linktype = "playlist"
+        elif "/watch" in self.url and "list=" in self.url:
+            linktype = "playlist"
+        else:
+            linktype = "video"
+        return linktype
         
 if __name__ == "__main__":
     import sys
