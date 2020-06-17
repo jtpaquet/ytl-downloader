@@ -1,1 +1,1 @@
-dist\build\build.exe
+dist\main\main.exe
