@@ -45,7 +45,7 @@ class ytdl_ui(qmain_window, ui_MainWindow):
             self.videolengthLabel.setText(str(datetime.timedelta(seconds=self.yt.length)))
             self.videolengthLabel.adjustSize()
             # Set views text
-            self.videoviewsLabel.setText(self.sizeFormat(self.yt.views))
+            self.videoviewsLabel.setText(self.sizeFormat(self.yt.views)[:-1])
             self.videoviewsLabel.adjustSize()
             # Set ratings text
             self.videoratingsLabel.setText("{:.2f}/5.00".format(self.yt.rating))
@@ -61,6 +61,9 @@ class ytdl_ui(qmain_window, ui_MainWindow):
             
         elif self.link_type == "playlist":
             self.playlist = Playlist(self.url)
+            while len(self.playlist) == 0:
+                print('wtf')
+                self.playlist = Playlist(self.url)
             self.videos = []
             self.loadingLabel.show()
             for link in self.playlist:
@@ -72,11 +75,11 @@ class ytdl_ui(qmain_window, ui_MainWindow):
             self.playlistlengthLabel.adjustSize()
             # Set videos text
             titles = [vid.title for vid in self.videos]
-            print(titles)
-            print("\n".join(titles))
             self.videosLabel.setText("\n".join(titles))
             self.videosLabel.adjustSize()
             # Thumbnail
+            print(self.videos)
+            print(self.videos[0].title)
             data = urllib.request.urlopen(self.videos[0].thumbnail_url).read()
             self.thumbnail = QtGui.QImage()
             self.thumbnail.loadFromData(data)
@@ -99,6 +102,7 @@ class ytdl_ui(qmain_window, ui_MainWindow):
         self.update_infos()
         if self.link_type == "video":
             self.infoVideoWidget.show()
+            self.infoPlaylistWidget.hide()
             # Set possibilities
             types = []
             self.typeCombo.clear()
@@ -114,6 +118,7 @@ class ytdl_ui(qmain_window, ui_MainWindow):
         elif self.link_type == "playlist":
             self.infoPlaylistWidget.show()
             self.downloadallWidget.show()
+            self.infoVideoWidget.hide()
         # movie.stop()
         self.statusLabel.setText("Done!")
         self.statusLabel.adjustSize()
@@ -234,5 +239,5 @@ if __name__ == "__main__":
     import sys
     MainEvntThread = QtWidgets.QApplication([])
     ui = ytdl_ui(None)
-    ui.showMinimized()
+    ui.showMaximized()
     MainEvntThread.exec()
