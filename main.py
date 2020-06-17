@@ -108,7 +108,6 @@ class ytdl_ui(qmain_window, ui_MainWindow):
                     types.append(s.type)
             
             self.typeCombo.addItems([t.capitalize() for t in sorted(types)])
-            
             self.addFormat()
             self.downloadWidget.show()
 
@@ -152,7 +151,7 @@ class ytdl_ui(qmain_window, ui_MainWindow):
         self.loadingLabel.show()
         count = 0
         for vid in self.videos:
-            self.loadingLabel.setText("Loading...\n{}/{}".format(count, len(self.videos)))
+            self.loadingLabel.setText("Downloading...\n{}/{}".format(count, len(self.videos)))
             QtWidgets.QApplication.processEvents()
             fname = "{} - {}".format(vid.author, vid.title)
             if self.audioButton.isChecked():
@@ -165,20 +164,27 @@ class ytdl_ui(qmain_window, ui_MainWindow):
         self.statusLabel.setText("Done!")
 
     def downloadHighest(self):
-        self.statusLabel.setText("Downloading...")
-        self.update_infos()
-        if self.audioButton.isChecked():
-            self.stream = self.yt.streams.get_audio_only()
-        elif self.videoButton.isChecked():
-            self.stream = self.yt.streams.get_highest_resolution()
-        if self.stream == None:
-            self.statusLabel.setText("No stream for selected type")
-            
-        self.sizeLabel.setText(self.sizeFormat(self.stream.filesize_approx))
-        path = os.getcwd()
-        fname = "{} - {}".format(self.videoauthorLabel.text(), self.videotitleLabel.text())
-        self.stream.download(output_path=os.path.join(path, "Downloads"), filename=fname)
-        self.statusLabel.setText("Done!")
+        self.url = self.linkLineEdit.text()
+        self.link_type = self.checkLink()
+        if self.link_type == "video":
+            self.statusLabel.setText("Downloading...")
+            self.update_infos()
+            if self.audioButton.isChecked():
+                self.stream = self.yt.streams.get_audio_only()
+            elif self.videoButton.isChecked():
+                self.stream = self.yt.streams.get_highest_resolution()
+            if self.stream == None:
+                self.statusLabel.setText("No stream for selected type")
+                
+            self.sizeLabel.setText(self.sizeFormat(self.stream.filesize_approx))
+            path = os.getcwd()
+            fname = "{} - {}".format(self.videoauthorLabel.text(), self.videotitleLabel.text())
+            self.stream.download(output_path=os.path.join(path, "Downloads"), filename=fname)
+            self.statusLabel.setText("Done!")
+        
+        elif self.link_type == "playlist":
+            self.search()
+            self.downloadall()
         
         
     def editLink(self, text):

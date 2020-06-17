@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>730</width>
-    <height>681</height>
+    <height>321</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -881,7 +881,7 @@
       <item>
        <spacer name="horizontalSpacer_2">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
